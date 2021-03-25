@@ -1,38 +1,57 @@
 import request from '@/utils/request'
 
-export function getRoutes() {
+// 获取所有的Role
+export function getAll() {
   return request({
-    url: '/vue-element-admin/routes',
+    url: 'api/roles/all',
     method: 'get'
   })
 }
 
-export function getRoles() {
+export function add(data) {
   return request({
-    url: '/vue-element-admin/roles',
-    method: 'get'
-  })
-}
-
-export function addRole(data) {
-  return request({
-    url: '/vue-element-admin/role',
+    url: 'api/roles',
     method: 'post',
     data
   })
 }
 
-export function updateRole(id, data) {
+export function get(id) {
   return request({
-    url: `/vue-element-admin/role/${id}`,
+    url: 'api/roles/' + id,
+    method: 'get'
+  })
+}
+
+export function getLevel() {
+  return request({
+    url: 'api/roles/level',
+    method: 'get'
+  })
+}
+
+export function del(ids) {
+  return request({
+    url: 'api/roles',
+    method: 'delete',
+    data: ids
+  })
+}
+
+export function edit(data) {
+  return request({
+    url: 'api/roles',
     method: 'put',
     data
   })
 }
 
-export function deleteRole(id) {
+export function editMenu(data) {
   return request({
-    url: `/vue-element-admin/role/${id}`,
-    method: 'delete'
+    url: 'api/roles/menu',
+    method: 'put',
+    data
   })
 }
+
+export default { add, edit, del, get, editMenu, getLevel }
