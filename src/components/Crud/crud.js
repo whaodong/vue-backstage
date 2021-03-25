@@ -617,7 +617,7 @@ function mergeOptions(src, opts) {
     ...src
   }
   for (const key in src) {
-    if (Object.protopyte.hasOwnProperty.call(opts, key)) {
+    if (opts.hasOwnProperty(key)) {
       optsRet[key] = opts[key]
     }
   }
