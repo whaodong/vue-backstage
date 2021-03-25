@@ -25,7 +25,7 @@ export default {
   },
   data() {
     return {
-      title: 'constantRouterMap',
+      title: '后台管理',
       logo: Logo
     }
   }
