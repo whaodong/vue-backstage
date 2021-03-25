@@ -103,7 +103,8 @@
         ref="table"
         v-loading="crud.loading"
         :data="crud.data"
-        style="width: 100%;height: 400px;"
+        style="width: 100%;"
+        :height="height"
         border
         @selection-change="crud.selectionChangeHandler"
       >
@@ -192,7 +193,7 @@ export default {
       }
     }
     return {
-      height: document.documentElement.clientHeight - 180 + 'px;',
+      height: window.innerHeight - 222.5 - 42,
       deptName: '', depts: [], deptDatas: [], jobs: [], level: 3, roles: [],
       jobDatas: [], roleDatas: [], // 多选时使用
       defaultProps: { children: 'children', label: 'name', isLeaf: 'leaf' },
@@ -235,7 +236,7 @@ export default {
   mounted: function() {
     const that = this
     window.onresize = function temp() {
-      that.height = document.documentElement.clientHeight - 180 + 'px;'
+      that.height = window.innerHeight - 222.5 - 42
     }
   },
   methods: {
