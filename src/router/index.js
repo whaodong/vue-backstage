@@ -1,132 +1,72 @@
-import Vue from 'vue'
-import Router from 'vue-router'
+import router from './router'
+import store from '@/store'
+import Config from '@/settings'
+import NProgress from 'nprogress' // progress bar
+import 'nprogress/nprogress.css'// progress bar style
+import { getToken } from '@/utils/auth' // getToken from cookie
+import { buildMenus } from '@/api/menu'
+import { filterAsyncRouter } from '@/store/modules/permission'
 
-Vue.use(Router)
+NProgress.configure({ showSpinner: false })// NProgress Configuration
 
-/* Layout */
-import Layout from '@/layout'
+const whiteList = ['/login']// no redirect whitelist
 
-/* Router Modules */
-
-/**
- * Note: sub-menu only appear when route children.length >= 1
- * Detail see: https://panjiachen.github.io/vue-element-admin-site/guide/essentials/router-and-nav.html
- *
- * hidden: true                   if set true, item will not show in the sidebar(default is false)
- * alwaysShow: true               if set true, will always show the root menu
- *                                if not set alwaysShow, when item has more than one children route,
- *                                it will becomes nested mode, otherwise not show the root menu
- * redirect: noRedirect           if set noRedirect will no redirect in the breadcrumb
- * name:'router-name'             the name is used by <keep-alive> (must set!!!)
- * meta : {
-    roles: ['admin','editor']    control the page roles (you can set multiple roles)
-    title: 'title'               the name show in sidebar and breadcrumb (recommend set)
-    icon: 'svg-name'/'el-icon-x' the icon show in the sidebar
-    noCache: true                if set true, the page will no be cached(default is false)
-    affix: true                  if set true, the tag will affix in the tags-view
-    breadcrumb: false            if set false, the item will hidden in breadcrumb(default is true)
-    activeMenu: '/example/list'  if set path, the sidebar will highlight the path you set
+router.beforeEach((to, from, next) => {
+  if (to.meta.title) {
+    document.title = to.meta.title + ' - ' + Config.title
   }
- */
-
-/**
- * constantRoutes
- * a base page that does not have permission requirements
- * all roles can be accessed
- */
-export const constantRoutes = [
-  {
-    path: '/redirect',
-    component: Layout,
-    hidden: true,
-    children: [
-      {
-        path: '/redirect/:path(.*)',
-        component: () => import('@/views/redirect/index')
+  NProgress.start()
+  if (getToken()) {
+    // 已登录且要跳转的页面是登录页
+    if (to.path === '/login') {
+      next({ path: '/' })
+      NProgress.done()
+    } else {
+      if (store.getters.roles.length === 0) { // 判断当前用户是否已拉取完user_info信息
+        store.dispatch('GetInfo').then(() => { // 拉取user_info
+          // 动态路由，拉取菜单
+          loadMenus(next, to)
+        }).catch(() => {
+          store.dispatch('LogOut').then(() => {
+            location.reload() // 为了重新实例化vue-router对象 避免bug
+          })
+        })
+        // 登录时未拉取 菜单，在此处拉取
+      } else if (store.getters.loadMenus) {
+        // 修改成false，防止死循环
+        store.dispatch('updateLoadMenus')
+        loadMenus(next, to)
+      } else {
+        next()
       }
-    ]
-  },
-  {
-    path: '/login',
-    component: () => import('@/views/login/index'),
-    hidden: true
-  },
-  {
-    path: '/auth-redirect',
-    component: () => import('@/views/login/auth-redirect'),
-    hidden: true
-  },
-  {
-    path: '/404',
-    component: () => import('@/views/error-page/404'),
-    hidden: true
-  },
-  {
-    path: '/401',
-    component: () => import('@/views/error-page/401'),
-    hidden: true
-  },
-  {
-    path: '/',
-    component: Layout,
-    redirect: '/dashboard',
-    children: [
-      {
-        path: 'dashboard',
-        component: () => import('@/views/dashboard/index'),
-        name: 'dashboard',
-        meta: { title: '首页', icon: 'dashboard', affix: true }
-      }
-    ]
+    }
+  } else {
+    /* has no token*/
+    if (whiteList.indexOf(to.path) !== -1) { // 在免登录白名单，直接进入
+      next()
+    } else {
+      next(`/login?redirect=${to.fullPath}`) // 否则全部重定向到登录页
+      NProgress.done()
+    }
   }
-]
-
-/**
- * asyncRoutes
- * the routes that need to be dynamically loaded based on user roles
- */
-export const asyncRoutes = [
-  /** when your routing map is too long, you can split it into small modules **/
-  {
-    path: '/error',
-    component: Layout,
-    redirect: 'noRedirect',
-    name: 'ErrorPages',
-    meta: {
-      title: 'Error Pages',
-      icon: '404'
-    },
-    children: [
-      {
-        path: '401',
-        component: () => import('@/views/error-page/401'),
-        name: 'Page401',
-        meta: { title: '401', noCache: true }
-      },
-      {
-        path: '404',
-        component: () => import('@/views/error-page/404'),
-        name: 'Page404',
-        meta: { title: '404', noCache: true }
-      }
-    ]
-  },
-  // 404 page must be placed at the end !!!
-  { path: '*', redirect: '/404', hidden: true }
-]
-
-const createRouter = () => new Router({
-  // mode: 'history', // require service support
-  scrollBehavior: () => ({ y: 0 }),
-  routes: constantRoutes
 })
 
-const router = createRouter()
+export const loadMenus = (next, to) => {
+  buildMenus().then(res => {
+    const sdata = JSON.parse(JSON.stringify(res))
+    const rdata = JSON.parse(JSON.stringify(res))
+    const sidebarRoutes = filterAsyncRouter(sdata)
+    const rewriteRoutes = filterAsyncRouter(rdata, true)
+    rewriteRoutes.push({ path: '*', redirect: '/404', hidden: true })
 
-// Detail see: https://github.com/vuejs/vue-router/issues/1234#issuecomment-357941465
-export function resetRouter() {
-  const newRouter = createRouter()
-  router.matcher = newRouter.matcher // reset router
+    store.dispatch('GenerateRoutes', rewriteRoutes).then(() => { // 存储路由
+      router.addRoutes(rewriteRoutes) // 动态添加可访问路由表
+      next({ ...to, replace: true })
+    })
+    store.dispatch('SetSidebarRouters', sidebarRoutes)
+  })
 }
 
-export default router
+router.afterEach(() => {
+  NProgress.done() // finish progress bar
+})
