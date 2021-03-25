@@ -37,7 +37,14 @@
         <crudOperation show="" :permission="permission" />
       </div>
       <!--表单渲染-->
-      <el-dialog append-to-body :close-on-click-modal="false" :before-close="crud.cancelCU" :visible.sync="crud.status.cu > 0" :title="crud.status.title" width="570px">
+      <el-dialog
+        append-to-body
+        :close-on-click-modal="false"
+        :before-close="crud.cancelCU"
+        :visible.sync="crud.status.cu > 0"
+        :title="crud.status.title"
+        width="570px"
+      >
         <el-form ref="form" :inline="true" :model="form" :rules="rules" size="small" label-width="66px">
           <el-form-item label="用户名" prop="username">
             <el-input v-model="form.username" />
@@ -63,7 +70,8 @@
                 v-for="item in dict.user_status"
                 :key="item.id"
                 :label="item.value"
-              >{{ item.label }}</el-radio>
+              >{{ item.label }}
+              </el-radio>
             </el-radio-group>
           </el-form-item>
           <el-form-item style="margin-bottom: 0;" label="角色" prop="roles">
@@ -91,7 +99,14 @@
         </div>
       </el-dialog>
       <!--表格渲染-->
-      <el-table ref="table" v-loading="crud.loading" :data="crud.data" style="width: 100%;" @selection-change="crud.selectionChangeHandler">
+      <el-table
+        ref="table"
+        v-loading="crud.loading"
+        :data="crud.data"
+        style="width: 100%;height: 400px;"
+        border
+        @selection-change="crud.selectionChangeHandler"
+      >
         <el-table-column :selectable="checkboxT" type="selection" width="55" />
         <el-table-column :show-overflow-tooltip="true" prop="username" label="用户名" />
         <el-table-column :show-overflow-tooltip="true" prop="nickName" label="昵称" />
@@ -113,7 +128,7 @@
         <el-table-column
           v-if="checkPer(['admin','user:edit','user:del'])"
           label="操作"
-          width="115"
+          width="120"
           align="center"
           fixed="right"
         >
@@ -143,9 +158,19 @@ import udOperation from '@crud/UD.operation'
 import pagination from '@crud/Pagination'
 import DateRangePicker from '@/components/DateRangePicker'
 import { mapGetters } from 'vuex'
+
 let userRoles = []
 let userJobs = []
-const defaultForm = { id: null, username: null, nickName: null, gender: '男', email: null, enabled: 'false', roles: [], phone: null }
+const defaultForm = {
+  id: null,
+  username: null,
+  nickName: null,
+  gender: '男',
+  email: null,
+  enabled: 'false',
+  roles: [],
+  phone: null
+}
 export default {
   name: 'User',
   components: { crudOperation, rrOperation, udOperation, pagination, DateRangePicker },
@@ -292,13 +317,15 @@ export default {
     getRoles() {
       getAll().then(res => {
         this.roles = res
-      }).catch(() => { })
+      }).catch(() => {
+      })
     },
     // 获取权限级别
     getRoleLevel() {
       getLevel().then(res => {
         this.level = res.level
-      }).catch(() => { })
+      }).catch(() => {
+      })
     },
     checkboxT(row, rowIndex) {
       return row.id !== this.user.id
@@ -308,8 +335,8 @@ export default {
 </script>
 
 <style rel="stylesheet/scss" lang="scss" scoped>
-  ::v-deep .vue-treeselect__control,::v-deep .vue-treeselect__placeholder,::v-deep .vue-treeselect__single-value {
-    height: 30px;
-    line-height: 30px;
-  }
+::v-deep .vue-treeselect__control, ::v-deep .vue-treeselect__placeholder, ::v-deep .vue-treeselect__single-value {
+  height: 30px;
+  line-height: 30px;
+}
 </style>
