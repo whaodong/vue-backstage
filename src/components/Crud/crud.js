@@ -37,10 +37,10 @@ function CRUD(options) {
     time: 50,
     // CRUD Method
     crudMethod: {
-      add: (form) => {},
-      del: (id) => {},
-      edit: (form) => {},
-      get: (id) => {}
+      add: form => {},
+      del: id => {},
+      edit: form => {},
+      get: id => {}
     },
     // 主页操作栏显示哪些按钮
     optShow: {
@@ -67,18 +67,31 @@ function CRUD(options) {
       edit: CRUD.STATUS.NORMAL,
       // 添加或编辑状态
       get cu() {
-        if (this.add === CRUD.STATUS.NORMAL && this.edit === CRUD.STATUS.NORMAL) {
+        if (
+          this.add === CRUD.STATUS.NORMAL &&
+          this.edit === CRUD.STATUS.NORMAL
+        ) {
           return CRUD.STATUS.NORMAL
-        } else if (this.add === CRUD.STATUS.PREPARED || this.edit === CRUD.STATUS.PREPARED) {
+        } else if (
+          this.add === CRUD.STATUS.PREPARED ||
+          this.edit === CRUD.STATUS.PREPARED
+        ) {
           return CRUD.STATUS.PREPARED
-        } else if (this.add === CRUD.STATUS.PROCESSING || this.edit === CRUD.STATUS.PROCESSING) {
+        } else if (
+          this.add === CRUD.STATUS.PROCESSING ||
+          this.edit === CRUD.STATUS.PROCESSING
+        ) {
           return CRUD.STATUS.PROCESSING
         }
-        throw new Error('wrong crud\'s cu status')
+        throw new Error("wrong crud's cu status")
       },
       // 标题
       get title() {
-        return this.add > CRUD.STATUS.NORMAL ? `新增${crud.title}` : this.edit > CRUD.STATUS.NORMAL ? `编辑${crud.title}` : crud.title
+        return this.add > CRUD.STATUS.NORMAL
+          ? `新增${crud.title}`
+          : this.edit > CRUD.STATUS.NORMAL
+            ? `编辑${crud.title}`
+            : crud.title
       }
     },
     msg: {
@@ -131,25 +144,28 @@ function CRUD(options) {
       return new Promise((resolve, reject) => {
         crud.loading = true
         // 请求数据
-        initData(crud.url, crud.getQueryParams()).then(data => {
-          const table = crud.getTable()
-          if (table && table.lazy) { // 懒加载子节点数据，清掉已加载的数据
-            table.store.states.treeData = {}
-            table.store.states.lazyTreeNodeMap = {}
-          }
-          crud.page.total = data.totalElements
-          crud.data = data.content
-          crud.resetDataStatus()
-          // time 毫秒后显示表格
-          setTimeout(() => {
+        initData(crud.url, crud.getQueryParams())
+          .then(data => {
+            const table = crud.getTable()
+            if (table && table.lazy) {
+              // 懒加载子节点数据，清掉已加载的数据
+              table.store.states.treeData = {}
+              table.store.states.lazyTreeNodeMap = {}
+            }
+            crud.page.total = data.totalElements
+            crud.data = data.content
+            crud.resetDataStatus()
+            // time 毫秒后显示表格
+            setTimeout(() => {
+              crud.loading = false
+              callVmHook(crud, CRUD.HOOK.afterRefresh)
+            }, crud.time)
+            resolve(data)
+          })
+          .catch(err => {
             crud.loading = false
-            callVmHook(crud, CRUD.HOOK.afterRefresh)
-          }, crud.time)
-          resolve(data)
-        }).catch(err => {
-          crud.loading = false
-          reject(err)
-        })
+            reject(err)
+          })
       })
     },
     /**
@@ -157,7 +173,12 @@ function CRUD(options) {
      */
     toAdd() {
       crud.resetForm()
-      if (!(callVmHook(crud, CRUD.HOOK.beforeToAdd, crud.form) && callVmHook(crud, CRUD.HOOK.beforeToCU, crud.form))) {
+      if (
+        !(
+          callVmHook(crud, CRUD.HOOK.beforeToAdd, crud.form) &&
+          callVmHook(crud, CRUD.HOOK.beforeToCU, crud.form)
+        )
+      ) {
         return
       }
       crud.status.add = CRUD.STATUS.PREPARED
@@ -170,7 +191,12 @@ function CRUD(options) {
      */
     toEdit(data) {
       crud.resetForm(JSON.parse(JSON.stringify(data)))
-      if (!(callVmHook(crud, CRUD.HOOK.beforeToEdit, crud.form) && callVmHook(crud, CRUD.HOOK.beforeToCU, crud.form))) {
+      if (
+        !(
+          callVmHook(crud, CRUD.HOOK.beforeToEdit, crud.form) &&
+          callVmHook(crud, CRUD.HOOK.beforeToCU, crud.form)
+        )
+      ) {
         return
       }
       crud.status.edit = CRUD.STATUS.PREPARED
@@ -256,16 +282,19 @@ function CRUD(options) {
         return
       }
       crud.status.add = CRUD.STATUS.PROCESSING
-      crud.crudMethod.add(crud.form).then(() => {
-        crud.status.add = CRUD.STATUS.NORMAL
-        crud.resetForm()
-        crud.addSuccessNotify()
-        callVmHook(crud, CRUD.HOOK.afterSubmit)
-        crud.toQuery()
-      }).catch(() => {
-        crud.status.add = CRUD.STATUS.PREPARED
-        callVmHook(crud, CRUD.HOOK.afterAddError)
-      })
+      crud.crudMethod
+        .add(crud.form)
+        .then(() => {
+          crud.status.add = CRUD.STATUS.NORMAL
+          crud.resetForm()
+          crud.addSuccessNotify()
+          callVmHook(crud, CRUD.HOOK.afterSubmit)
+          crud.toQuery()
+        })
+        .catch(() => {
+          crud.status.add = CRUD.STATUS.PREPARED
+          callVmHook(crud, CRUD.HOOK.afterAddError)
+        })
     },
     /**
      * 执行编辑
@@ -275,17 +304,21 @@ function CRUD(options) {
         return
       }
       crud.status.edit = CRUD.STATUS.PROCESSING
-      crud.crudMethod.edit(crud.form).then(() => {
-        crud.status.edit = CRUD.STATUS.NORMAL
-        crud.getDataStatus(crud.getDataId(crud.form)).edit = CRUD.STATUS.NORMAL
-        crud.editSuccessNotify()
-        crud.resetForm()
-        callVmHook(crud, CRUD.HOOK.afterSubmit)
-        crud.refresh()
-      }).catch(() => {
-        crud.status.edit = CRUD.STATUS.PREPARED
-        callVmHook(crud, CRUD.HOOK.afterEditError)
-      })
+      crud.crudMethod
+        .edit(crud.form)
+        .then(() => {
+          crud.status.edit = CRUD.STATUS.NORMAL
+          crud.getDataStatus(crud.getDataId(crud.form)).edit =
+            CRUD.STATUS.NORMAL
+          crud.editSuccessNotify()
+          crud.resetForm()
+          callVmHook(crud, CRUD.HOOK.afterSubmit)
+          crud.refresh()
+        })
+        .catch(() => {
+          crud.status.edit = CRUD.STATUS.PREPARED
+          callVmHook(crud, CRUD.HOOK.afterEditError)
+        })
     },
     /**
      * 执行删除
@@ -310,43 +343,54 @@ function CRUD(options) {
       if (!delAll) {
         dataStatus.delete = CRUD.STATUS.PROCESSING
       }
-      return crud.crudMethod.del(ids).then(() => {
-        if (delAll) {
-          crud.delAllLoading = false
-        } else dataStatus.delete = CRUD.STATUS.PREPARED
-        crud.dleChangePage(1)
-        crud.delSuccessNotify()
-        callVmHook(crud, CRUD.HOOK.afterDelete, data)
-        crud.refresh()
-      }).catch(() => {
-        if (delAll) {
-          crud.delAllLoading = false
-        } else dataStatus.delete = CRUD.STATUS.PREPARED
-      })
+      return crud.crudMethod
+        .del(ids)
+        .then(() => {
+          if (delAll) {
+            crud.delAllLoading = false
+          } else dataStatus.delete = CRUD.STATUS.PREPARED
+          crud.dleChangePage(1)
+          crud.delSuccessNotify()
+          callVmHook(crud, CRUD.HOOK.afterDelete, data)
+          crud.refresh()
+        })
+        .catch(() => {
+          if (delAll) {
+            crud.delAllLoading = false
+          } else dataStatus.delete = CRUD.STATUS.PREPARED
+        })
     },
     /**
      * 通用导出
      */
     doExport() {
       crud.downloadLoading = true
-      download(crud.url + '/download', crud.getQueryParams()).then(result => {
-        downloadFile(result, crud.title + '数据', 'xlsx')
-        crud.downloadLoading = false
-      }).catch(() => {
-        crud.downloadLoading = false
-      })
+      download(crud.url + '/download', crud.getQueryParams())
+        .then(result => {
+          downloadFile(result, crud.title + '数据', 'xlsx')
+          crud.downloadLoading = false
+        })
+        .catch(() => {
+          crud.downloadLoading = false
+        })
     },
     /**
      * 获取查询参数
      */
     getQueryParams: function() {
       // 清除参数无值的情况
-      Object.keys(crud.query).length !== 0 && Object.keys(crud.query).forEach(item => {
-        if (crud.query[item] === null || crud.query[item] === '') crud.query[item] = undefined
-      })
-      Object.keys(crud.params).length !== 0 && Object.keys(crud.params).forEach(item => {
-        if (crud.params[item] === null || crud.params[item] === '') crud.params[item] = undefined
-      })
+      Object.keys(crud.query).length !== 0 &&
+        Object.keys(crud.query).forEach(item => {
+          if (crud.query[item] === null || crud.query[item] === '') {
+            crud.query[item] = undefined
+          }
+        })
+      Object.keys(crud.params).length !== 0 &&
+        Object.keys(crud.params).forEach(item => {
+          if (crud.params[item] === null || crud.params[item] === '') {
+            crud.params[item] = undefined
+          }
+        })
       return {
         page: crud.page.page - 1,
         size: crud.page.size,
@@ -397,9 +441,14 @@ function CRUD(options) {
      * @param {Array} data 数据
      */
     resetForm(data) {
-      const form = data || (typeof crud.defaultForm === 'object' ? JSON.parse(JSON.stringify(crud.defaultForm)) : crud.defaultForm.apply(crud.findVM('form')))
+      const form =
+        data ||
+        (typeof crud.defaultForm === 'object'
+          ? JSON.parse(JSON.stringify(crud.defaultForm))
+          : crud.defaultForm.apply(crud.findVM('form')))
       const crudFrom = crud.form
       for (const key in form) {
+        // eslint-disable-next-line no-prototype-builtins
         if (crudFrom.hasOwnProperty(key)) {
           crudFrom[key] = form[key]
         } else {
@@ -458,7 +507,11 @@ function CRUD(options) {
      */
     selectChange(selection, row) {
       // 如果selection中存在row代表是选中，否则是取消选中
-      if (selection.find(val => { return crud.getDataId(val) === crud.getDataId(row) })) {
+      if (
+        selection.find(val => {
+          return crud.getDataId(val) === crud.getDataId(row)
+        })
+      ) {
         if (row.children) {
           row.children.forEach(val => {
             crud.getTable().toggleRowSelection(val, true)
@@ -555,7 +608,8 @@ function CRUD(options) {
         this.vms.push(vmObj)
         return
       }
-      if (index < 4) { // 内置预留vm数
+      if (index < 4) {
+        // 内置预留vm数
         this.vms[index] = vmObj
         return
       }
@@ -572,7 +626,8 @@ function CRUD(options) {
           continue
         }
         if (this.vms[i].type === type && this.vms[i].vm === vm) {
-          if (i < 4) { // 内置预留vm数
+          if (i < 4) {
+            // 内置预留vm数
             this.vms[i] = undefined
           } else {
             this.vms.splice(i, 1)
@@ -617,6 +672,7 @@ function mergeOptions(src, opts) {
     ...src
   }
   for (const key in src) {
+    // eslint-disable-next-line no-prototype-builtins
     if (opts.hasOwnProperty(key)) {
       optsRet[key] = opts[key]
     }
@@ -646,7 +702,10 @@ function lookupCrud(vm, tag) {
  */
 function presenter(crud) {
   if (crud) {
-    console.warn('[CRUD warn]: ' + 'please use $options.cruds() { return CRUD(...) or [CRUD(...), ...] }')
+    console.warn(
+      '[CRUD warn]: ' +
+        'please use $options.cruds() { return CRUD(...) or [CRUD(...), ...] }'
+    )
   }
   return {
     data() {
@@ -657,13 +716,16 @@ function presenter(crud) {
     },
     beforeCreate() {
       this.$crud = this.$crud || {}
-      let cruds = this.$options.cruds instanceof Function ? this.$options.cruds() : crud
+      let cruds =
+        this.$options.cruds instanceof Function ? this.$options.cruds() : crud
       if (!(cruds instanceof Array)) {
         cruds = [cruds]
       }
       cruds.forEach(ele => {
         if (this.$crud[ele.tag]) {
-          console.error('[CRUD error]: ' + 'crud with tag [' + ele.tag + ' is already exist')
+          console.error(
+            '[CRUD error]: ' + 'crud with tag [' + ele.tag + ' is already exist'
+          )
         }
         this.$crud[ele.tag] = ele
         ele.registerVM('presenter', this, 0)
@@ -854,10 +916,4 @@ CRUD.NOTIFICATION_TYPE = {
 
 export default CRUD
 
-export {
-  presenter,
-  header,
-  form,
-  pagination,
-  crud
-}
+export { presenter, header, form, pagination, crud }
