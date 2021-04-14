@@ -144,4 +144,7 @@ export default {
 ::v-deep .w-e-text-container {
   height: 360px !important;
 }
+.el-tabs {
+   margin-bottom: 0px;
+}
 </style>
